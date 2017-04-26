@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) 2012-2016 Arne Schwabe
+  ~ Distributed under the GNU GPL v2 with additional terms. For full terms see the file doc/LICENSE.txt
+  -->
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/item_news"
+        android:icon="@mipmap/ic_yun"
+        android:title="连接" />
+    <item
+        android:id="@+id/item_lib"
+        android:icon="@mipmap/ic_yun"
+        android:title="图书" />
+
+    <item
+        android:id="@+id/item_find"
+        android:icon="@mipmap/ic_yun"
+        android:title="发现" />
+
+
+</menu>
