@@ -66,7 +66,7 @@ public class Util {
         ObjectInputStream ois = null;
         Object obj = null;
         try {
-            Log.e("TAG", new File(path).getAbsolutePath() + "<---");
+
             //获取输入流
             ois = new ObjectInputStream(new FileInputStream(new File(path)));
             //获取文件中的数据

@@ -6,10 +6,11 @@
 package cn.lmcw.vpn.fragment;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,11 +18,9 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.List;
 
 import cn.lmcw.vpn.R;
 import cn.lmcw.vpn.openvpn.DisconnectVPN;
@@ -52,41 +51,39 @@ public class YunFragment extends Fragment {
     Button btnOpen;
     Button btnClose;
 
-    private VpnProfile mResult;
-    private transient List<String> mPathsegments;
+    Button btnCenter;
+
+    /* vpn连接配置文件对象 */
+    private VpnProfile vpnProfile;
+    AsyncTask<String, Integer, VpnProfile> asyncTask;
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_yun, null);
+
+        btnCenter = (Button) view.findViewById(R.id.btn_center);
+
         btnParse = (Button) view.findViewById(R.id.btn_parse);
 
         btnParse.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                try {
-                    InputStream in = new FileInputStream(Util.getSDPath() + "/news.ovpn");
-                    doImport(in);
-
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-
 
             }
         });
 
         btnOpen = (Button) view.findViewById(R.id.open);
-        btnOpen.setOnClickListener(new View.OnClickListener() {
+        btnCenter.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                if (mResult == null) {
+                if (vpnProfile == null) {
                     Toast.makeText(getContext(), "vpnProfle is null", Toast.LENGTH_SHORT).show();
                     return;
                 }
-                startOrStopVPN(mResult);
+                startOrStopVPN(vpnProfile);
 
             }
         });
@@ -97,7 +94,7 @@ public class YunFragment extends Fragment {
             @Override
             public void onClick(View view) {
 
-                if (VpnStatus.isVPNActive() && mResult.getUUIDString().equals(VpnStatus.getLastConnectedVPNProfile())) {
+                if (VpnStatus.isVPNActive() && vpnProfile.getUUIDString().equals(VpnStatus.getLastConnectedVPNProfile())) {
 
                     Intent disconnectVPN = new Intent(getActivity(), DisconnectVPN.class);
                     startActivity(disconnectVPN);
@@ -106,7 +103,78 @@ public class YunFragment extends Fragment {
             }
         });
 
+
         return view;
+    }
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+
+        asyncTask = taskParseConf();
+        asyncTask.execute("news.ovpn");
+
+
+    }
+
+
+    public void setStatus(final boolean enabled) {
+        if (btnCenter == null)
+            return;
+        btnCenter.post(new Runnable() {
+            @Override
+            public void run() {
+                btnCenter.setEnabled(enabled);
+            }
+        });
+    }
+
+    public void setText(final String str) {
+        if (btnCenter == null)
+            return;
+        btnCenter.post(new Runnable() {
+            @Override
+            public void run() {
+                btnCenter.setText(str);
+            }
+        }) ;
+    }
+
+
+    @NonNull
+    private AsyncTask<String, Integer, VpnProfile> taskParseConf() {
+        return new AsyncTask<String, Integer, VpnProfile>() {
+            @Override
+            protected VpnProfile doInBackground(String... params) {
+                // 读取配置文件
+                VpnProfile vpnProfile = null;
+                try {
+                    InputStream in = new FileInputStream(Util.getSDPath() + "/" + params[0]);
+                    vpnProfile = doImport(in);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return null;
+                }
+
+                return vpnProfile;
+            }
+
+            @Override
+            protected void onPostExecute(VpnProfile vpnProfile) {
+                super.onPostExecute(vpnProfile);
+                if (vpnProfile != null) {
+                    YunFragment.this.vpnProfile = vpnProfile;
+                    Toast.makeText(getContext(), "解析配置成功", Toast.LENGTH_SHORT).show();
+                    btnCenter.setBackgroundColor(0xff6fcacf);
+                    btnCenter.setEnabled(true);
+                    btnCenter.setText("连接VPN");
+                } else
+                    Toast.makeText(getContext(), "解析配置失败", Toast.LENGTH_SHORT).show();
+
+            }
+        };
     }
 
 
@@ -115,24 +183,11 @@ public class YunFragment extends Fragment {
      *
      * @param is
      */
-    private void doImport(InputStream is) {
+    private VpnProfile doImport(InputStream is) throws IOException, ConfigParser.ConfigParseError {
         ConfigParser cp = new ConfigParser();
-        try {
-            InputStreamReader isr = new InputStreamReader(is);
-
-            cp.parseConfig(isr);
-            mResult = cp.convertProfile();
-
-            Log.i("aaaaaaaa", "解析成功" + cp.convertProfile().getUUIDString());
-            Toast.makeText(getActivity(), "解析文件成功", Toast.LENGTH_SHORT).show();
-            return;
-
-        } catch (IOException | ConfigParser.ConfigParseError e) {
-            Log.i("aaaaaaaa", "解析异常" + e.getLocalizedMessage());
-            Toast.makeText(getContext(), "解析异常" + e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-        }
-        mResult = null;
-
+        InputStreamReader isr = new InputStreamReader(is);
+        cp.parseConfig(isr);
+        return cp.convertProfile();
     }
 
     /**
@@ -146,6 +201,10 @@ public class YunFragment extends Fragment {
 //            Intent disconnectVPN = new Intent(getActivity(), DisconnectVPN.class);
 //            startActivity(disconnectVPN);
         } else {
+            //设置账户和密码
+            profile.mUsername = "vnser";
+            profile.mPassword = "19980808";
+
             startVPN(profile);
         }
     }

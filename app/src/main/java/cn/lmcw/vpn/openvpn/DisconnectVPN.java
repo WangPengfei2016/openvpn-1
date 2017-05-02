@@ -75,8 +75,6 @@ public class DisconnectVPN extends Activity implements DialogInterface.OnClickLi
     public void onClick(DialogInterface dialog, int which) {
         if (which == DialogInterface.BUTTON_POSITIVE) {
 
-            //断开连接 清空
-            ProfileUtil.clear();
 
             if (mService != null) {
                 try {
@@ -84,6 +82,10 @@ public class DisconnectVPN extends Activity implements DialogInterface.OnClickLi
                 } catch (RemoteException e) {
                     VpnStatus.logException(e);
                 }
+
+                //断开连接 清空
+                ProfileUtil.clear();
+
             }
         } else if (which == DialogInterface.BUTTON_NEUTRAL) {
             Intent intent = new Intent(this, LaunchVPN.class);

@@ -35,7 +35,7 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:taskAffinity=".DisconnectVPN"
-            android:theme="@style/Theme.AppCompat.Light.Dialog.Alert" />
+            android:theme="@style/android:Theme.Material.Light.Dialog.Alert" />
 
         <service
             android:name=".openvpn.core.OpenVPNService"
@@ -77,7 +77,7 @@
             android:excludeFromRecents="true"
             android:label="@string/vpn_launch_title"
             android:taskAffinity=".LaunchVPN"
-            android:theme="@style/Theme.AppCompat.Light.Dialog.Alert"
+            android:theme="@style/android:Theme.Material.Light.Dialog.Alert"
             tools:ignore="ExportedActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -135,7 +135,7 @@ public class LaunchVPN extends Activity {
 
             // we got called to be the starting point, most likely a shortcut
             String shortcutUUID = intent.getStringExtra(EXTRA_KEY);
-            String shortcutName = intent.getStringExtra(EXTRA_NAME);
+
 
             mhideLog = intent.getBooleanExtra(EXTRA_HIDELOG, false);
 
@@ -154,89 +154,10 @@ public class LaunchVPN extends Activity {
         }
     }
 
-    private void askForPW(final int type) {
-
-        final EditText entry = new EditText(this);
-        final View userpwlayout = getLayoutInflater().inflate(R.layout.userpass, null, false);
-
-        entry.setSingleLine();
-        entry.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        entry.setTransformationMethod(new PasswordTransformationMethod());
-
-        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-//        dialog.setTitle("需要 %1$s");
-//        dialog.setMessage("请为配置文件 %1$s 输入密码");
-
-        if (type == R.string.password) {
-            ((EditText) userpwlayout.findViewById(R.id.username)).setText(mSelectedProfile.mUsername);
-            ((EditText) userpwlayout.findViewById(R.id.password)).setText(mSelectedProfile.mPassword);
-            ((CheckBox) userpwlayout.findViewById(R.id.save_password)).setChecked(!TextUtils.isEmpty(mSelectedProfile.mPassword));
-            ((CheckBox) userpwlayout.findViewById(R.id.show_password)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    if (isChecked)
-                        ((EditText) userpwlayout.findViewById(R.id.password)).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-                    else
-                        ((EditText) userpwlayout.findViewById(R.id.password)).setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                }
-            });
-
-            dialog.setView(userpwlayout);
-        } else {
-            dialog.setView(entry);
-        }
-
-        AlertDialog.Builder builder = dialog.setPositiveButton(android.R.string.ok,
-                new OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-
-                        if (type == R.string.password) {
-                            mSelectedProfile.mUsername = ((EditText) userpwlayout.findViewById(R.id.username)).getText().toString();
-
-                            String pw = ((EditText) userpwlayout.findViewById(R.id.password)).getText().toString();
-                            if (((CheckBox) userpwlayout.findViewById(R.id.save_password)).isChecked()) {
-                                mSelectedProfile.mPassword = pw;
-                            } else {
-                                mSelectedProfile.mPassword = null;
-                                mTransientAuthPW = pw;
-                            }
-                        } else {
-                            mTransientCertOrPCKS12PW = entry.getText().toString();
-                        }
-                        Intent intent = new Intent(LaunchVPN.this, OpenVPNStatusService.class);
-
-//                        ProfileManager.getInstance(getBaseContext()).saveProfile(getBaseContext(),mSelectedProfile);
-//
-//                        Log.i("aaaaa", "" + ProfileManager.getInstance(getBaseContext()).getProfiles().size());
-
-                        //多进程共享数据 序列化对象
-                        //Util.save(Util.getSDPath() + "/openvpn.conf", mSelectedProfile);
-                        //设置使用的 配置文件
-                        ProfileUtil.setUseConnectedProfile(mSelectedProfile);
-
-                        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-                    }
-
-                });
-        dialog.setNegativeButton(android.R.string.cancel,
-                new OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        VpnStatus.updateStateString("USER_VPN_PASSWORD_CANCELLED", "", R.string.state_user_vpn_password_cancelled,
-                                ConnectionStatus.LEVEL_NOTCONNECTED);
-                        finish();
-                    }
-                });
-
-        dialog.create().show();
-
-    }
-
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.i("aaaaaa", "LaunchVPN销毁了");
+
     }
 
     @Override
@@ -245,22 +166,18 @@ public class LaunchVPN extends Activity {
 
         if (requestCode == START_VPN_PROFILE) {
             if (resultCode == Activity.RESULT_OK) {
-                int needpw = mSelectedProfile.needUserPWInput(mTransientCertOrPCKS12PW, mTransientAuthPW);
-                if (needpw != 0) {
-                    VpnStatus.updateStateString("USER_VPN_PASSWORD", "", R.string.state_user_vpn_password,
-                            ConnectionStatus.LEVEL_WAITING_FOR_USER_INPUT);
-                    askForPW(needpw);
-                } else {
-                    SharedPreferences prefs = Preferences.getDefaultSharedPreferences(this);
-                    boolean showLogWindow = prefs.getBoolean("showlogwindow", true);
+                Toast.makeText(LaunchVPN.this, "启动VPN", Toast.LENGTH_SHORT).show();
 
-                    if (!mhideLog && showLogWindow)
-                        showLogWindow();
-                    Toast.makeText(LaunchVPN.this, "启动VPN", Toast.LENGTH_SHORT).show();
+                //设置使用的 配置文件
+                ProfileUtil.setUseConnectedProfile(mSelectedProfile);
+                Intent intent = new Intent(LaunchVPN.this, OpenVPNStatusService.class);
+                bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+//
+//                VpnStatus.updateStateString("USER_VPN_PASSWORD", "", R.string.state_user_vpn_password,
+//                        ConnectionStatus.LEVEL_WAITING_FOR_USER_INPUT);
+                VPNLaunchHelper.startOpenVpn(mSelectedProfile, getBaseContext());
+                finish();
 
-                    VPNLaunchHelper.startOpenVpn(mSelectedProfile, getBaseContext());
-                    finish();
-                }
             } else if (resultCode == Activity.RESULT_CANCELED) {
                 // User does not want us to start, so we just vanish
                 VpnStatus.updateStateString("USER_VPN_PERMISSION_CANCELLED", "", R.string.state_user_vpn_permission_cancelled,

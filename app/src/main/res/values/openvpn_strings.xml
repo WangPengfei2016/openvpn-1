@@ -39,7 +39,7 @@
     <string name="pauseVPN">暂停 VPN</string>
     <string name="resumevpn">继续 VPN</string>
     <string name="service_restarted">重新启动OpenVPN服务中 (应用程序崩溃-可能是真崩溃或由于内存不够用被kill)</string>
-    <string name="building_configration">Construyendo configuracion&#8230;</string>
+    <string name="building_configration">正在配置&#8230;</string>
     <string name="last_openvpn_tun_config">正在打开 tun 设备：</string>
     <string name="opentun_no_ipaddr">无 IP 信息，拒绝打开 tun 设备</string>
     <string name="dns_add_error">无法添加 DNS 服务器 \"%1$s\"，%2$s 拒绝了您的操作。</string>

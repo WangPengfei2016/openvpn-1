@@ -15,11 +15,18 @@ import android.view.MenuItem;
 import cn.lmcw.vpn.R;
 import cn.lmcw.vpn.adapter.ViewPagerAdapter;
 import cn.lmcw.vpn.base.BaseActivity;
+import cn.lmcw.vpn.fragment.OtherFragment;
 import cn.lmcw.vpn.fragment.YunFragment;
 import cn.lmcw.vpn.openvpn.core.ConnectionStatus;
 import cn.lmcw.vpn.openvpn.core.OpenVPNManagement;
 import cn.lmcw.vpn.openvpn.core.VpnStatus;
 import cn.lmcw.vpn.utils.Util;
+
+import static cn.lmcw.vpn.openvpn.core.ConnectionStatus.LEVEL_AUTH_FAILED;
+import static cn.lmcw.vpn.openvpn.core.ConnectionStatus.LEVEL_CONNECTED;
+import static cn.lmcw.vpn.openvpn.core.ConnectionStatus.LEVEL_CONNECTING_NO_SERVER_REPLY_YET;
+import static cn.lmcw.vpn.openvpn.core.ConnectionStatus.LEVEL_CONNECTING_SERVER_REPLIED;
+import static cn.lmcw.vpn.openvpn.core.ConnectionStatus.LEVEL_NOTCONNECTED;
 
 public class MainActivity extends BaseActivity implements VpnStatus.StateListener, VpnStatus.ByteCountListener {
 
@@ -27,6 +34,7 @@ public class MainActivity extends BaseActivity implements VpnStatus.StateListene
     private ViewPager viewPager;
     private MenuItem menuItem;
     private BottomNavigationView bottomNavigationView;
+    private YunFragment yunFragment;
 
 
     @Override
@@ -102,9 +110,9 @@ public class MainActivity extends BaseActivity implements VpnStatus.StateListene
     private void setupViewPager(ViewPager viewPager) {
         ViewPagerAdapter adapter = new ViewPagerAdapter(getSupportFragmentManager());
 
-        adapter.addFragment(YunFragment.newInstance("新闻"));
-        adapter.addFragment(YunFragment.newInstance("图书"));
-        adapter.addFragment(YunFragment.newInstance("发现"));
+        adapter.addFragment(yunFragment = YunFragment.newInstance("新闻"));
+        adapter.addFragment(OtherFragment.newInstance("图书"));
+        adapter.addFragment(OtherFragment.newInstance("发现"));
 
 
         viewPager.setAdapter(adapter);
@@ -113,6 +121,37 @@ public class MainActivity extends BaseActivity implements VpnStatus.StateListene
     @Override
     public void updateState(String state, String logmessage, int localizedResId, ConnectionStatus level) {
         Log.i("ttttttttttt", "state:" + state + " logmessage:" + logmessage + " localizedResId:" + getString(localizedResId) + " level:" + level);
+        if (localizedResId == R.string.state_noprocess && level == LEVEL_NOTCONNECTED) {
+            //未运行 初始化状态和断开状态
+            setText("连接VPN");
+
+        } else if (localizedResId == R.string.state_resolve && level == LEVEL_CONNECTING_NO_SERVER_REPLY_YET) {
+            //正在解析主机名
+            setText("正在解析主机名");
+        } else if (localizedResId == R.string.state_tcp_connect && level == LEVEL_CONNECTING_NO_SERVER_REPLY_YET) {
+            //连接中(TCP)
+            setText("连接中(TCP)");
+        } else if (localizedResId == R.string.state_wait && level == LEVEL_CONNECTING_NO_SERVER_REPLY_YET) {
+            //等待服务器响应
+            setText("等待服务器响应");
+        } else if (localizedResId == R.string.state_auth && level == LEVEL_CONNECTING_SERVER_REPLIED) {
+            //验证中
+        } else if (localizedResId == R.string.state_get_config && level == LEVEL_CONNECTING_SERVER_REPLIED) {
+            //正在获取客户端配置
+        } else if (localizedResId == R.string.state_assign_ip && level == LEVEL_CONNECTING_SERVER_REPLIED) {
+
+        } else if (localizedResId == R.string.state_connected && level == LEVEL_CONNECTED) {
+            //连接VPN成功
+            setText("连接VPN成功");
+            setStatus(true);
+
+        } else if (localizedResId == R.string.state_auth_failed && level == LEVEL_AUTH_FAILED) {
+            //账号密码验证失败
+            setText("账号密码验证失败");
+        }
+        //按钮可点击状态
+
+        setStatus(level == LEVEL_NOTCONNECTED || level == LEVEL_CONNECTED);
     }
 
     @Override
@@ -126,4 +165,21 @@ public class MainActivity extends BaseActivity implements VpnStatus.StateListene
         String up = String.format("%2$s/s %1$s", Util.humanReadableByteCount(out, false), Util.humanReadableByteCount(diffOut / OpenVPNManagement.mBytecountInterval, true));
         Log.i("ttttttttttt", down + " " + up);
     }
+
+
+    private void setText(String str) {
+        if (yunFragment == null) {
+            return;
+        }
+        yunFragment.setText(str);
+    }
+
+    private void setStatus(boolean b) {
+        if (yunFragment == null) {
+            return;
+        }
+        yunFragment.setStatus(b);
+    }
+
+
 }
